@@ -11,11 +11,12 @@ import { ChevronRight, Rocket } from "lucide-react"
 import Link from "next/link"
 import AnimatedGradientText from "../magicui/animated-gradient-text"
 import HeroVideoDialog from "../magicui/hero-video-dialog"
+import { AnimatedListDemo } from "./aniList"
 
 export const HeroSection = () => {
   return (
     <div className="flex flex-col items-center justify-center px-8 pt-32 text-center">
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -34,7 +35,7 @@ export const HeroSection = () => {
             <ChevronRight className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
           </AnimatedGradientText>
         </Link>
-      </motion.div>
+      </motion.div> */}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -48,7 +49,7 @@ export const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
           className="text-balance text-6xl font-bold"
         >
-          Receipt AI
+          Nahuel Insights
         </motion.div>
 
         <motion.div
@@ -57,7 +58,8 @@ export const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
           className="max-w-xl text-balance text-xl"
         >
-          Transform receipts and invoices into organized data instantly with AI.
+          Transform data and technical analysis into instant decision-making
+          with AI.
         </motion.div>
 
         <motion.div
@@ -80,12 +82,13 @@ export const HeroSection = () => {
         transition={{ duration: 1, delay: 1, ease: "easeOut" }}
         className="mx-auto mt-20 flex w-full max-w-screen-lg items-center justify-center rounded-lg border shadow-lg"
       >
-        <HeroVideoDialog
+        {/* <HeroVideoDialog
           animationStyle="top-in-bottom-out"
           videoSrc="https://www.youtube.com/embed/9yS0dR0kP-s"
           thumbnailSrc="hero.png"
           thumbnailAlt="Hero Video"
-        />
+        /> */}
+        <AnimatedListDemo />
       </motion.div>
     </div>
   )

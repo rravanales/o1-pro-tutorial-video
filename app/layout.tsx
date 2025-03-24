@@ -19,8 +19,9 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Receipt AI",
-  description: "A full-stack web app template."
+  title: "Nahuel Insights",
+  description:
+    "An application that enables traders and financial analysts interested in using technical analysis to identify market inefficiencies and opportunities in the stock market."
 }
 
 export default async function RootLayout({

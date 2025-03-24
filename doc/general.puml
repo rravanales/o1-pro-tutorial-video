@@ -1,0 +1,210 @@
+@startuml General
+' ------------------------------------------
+' Definir estilo para hooks (para diferenciarlos visualmente)
+skinparam class {
+  BackgroundColor<<hook>> LightYellow
+  ArrowColor LightGray
+}
+
+' ------------------------------------------
+' Package: Models
+package "Models" {
+  class Profile {
+    +string userId
+    +MembershipStatus membership
+    +string stripeCustomerId
+    +string stripeSubscriptionId
+    +Date createdAt
+    +Date updatedAt
+  }
+  
+  enum MembershipStatus {
+    free
+    pro
+  }
+  
+  class InsertProfile << (T,#ADD1B2) >> {
+    +string userId
+    +MembershipStatus membership
+    +string stripeCustomerId?
+    +string stripeSubscriptionId?
+  }
+  
+  class SelectProfile << (T,#ADD1B2) >> {
+    +string userId
+    +MembershipStatus membership
+    +string stripeCustomerId
+    +string stripeSubscriptionId
+    +Date createdAt
+    +Date updatedAt
+  }
+  
+  Profile <|-- InsertProfile
+  Profile <|-- SelectProfile
+}
+
+' ------------------------------------------
+' Package: Types & Contracts
+package "Types & Contracts" {
+  interface ActionState<T> {
+    +boolean isSuccess
+    +string message
+    +T data
+  }
+}
+
+' ------------------------------------------
+' Package: Database
+package "Database" {
+  class DB {
+    -PostgresClient client
+    -Map schema
+    +DB(client: PostgresClient, schema: Map)
+    +drizzle(): DB
+  }
+}
+
+' ------------------------------------------
+' Package: External Services
+package "External Services" {
+  class StripeService {
+    -Stripe stripe
+    +StripeService(secretKey: string, apiVersion: string)
+    +Subscription retrieveSubscription(subscriptionId: string)
+    +Product retrieveProduct(productId: string)
+  }
+  class EnvConfig {
+    +string DATABASE_URL
+    +string STRIPE_SECRET_KEY
+    +string STRIPE_WEBHOOK_SECRET
+    ' ... otras variables de entorno
+  }
+}
+
+' ------------------------------------------
+' Package: Actions
+package "Actions" {
+  class ProfilesActions {
+    +Promise<ActionState<SelectProfile>> createProfileAction(data: InsertProfile)
+    +Promise<ActionState<SelectProfile>> getProfileByUserIdAction(userId: string)
+    +Promise<ActionState<SelectProfile>> updateProfileAction(userId: string, data: Partial<InsertProfile>)
+    +Promise<ActionState<SelectProfile>> updateProfileByStripeCustomerIdAction(stripeCustomerId: string, data: Partial<InsertProfile>)
+    +Promise<ActionState<void>> deleteProfileAction(userId: string)
+  }
+  
+  class StripeActions {
+    +Promise<SelectProfile> updateStripeCustomer(userId: string, subscriptionId: string, customerId: string)
+    +Promise<MembershipStatus> manageSubscriptionStatusChange(subscriptionId: string, customerId: string, productId: string)
+    -MembershipStatus getMembershipStatus(status: string, membership: MembershipStatus)
+    -Promise<Subscription> getSubscription(subscriptionId: string)
+  }
+  
+  ProfilesActions ..> DB : "usa"
+  StripeActions --> ProfilesActions : "invoca métodos"
+  StripeActions --> StripeService : "usa"
+}
+
+' ------------------------------------------
+' Package: Webhooks & API
+package "Webhooks & API" {
+  class StripeWebhookHandler {
+    +POST(req: Request): Response
+    -handleSubscriptionChange(event: Stripe.Event): void
+    -handleCheckoutSession(event: Stripe.Event): void
+  }
+  
+  class NextJSRouter {
+    +Route[] getRoutes()
+    +void addRoute(path: string, handler: Function)
+  }
+  
+  StripeWebhookHandler --> StripeActions : "invoca métodos"
+}
+
+' ------------------------------------------
+' Package: Middleware & Auth
+package "Middleware & Auth" {
+  class ClerkAuth {
+    +Promise<{ userId: string, ... }> auth()
+    +void redirectToSignIn()
+  }
+  class AuthMiddleware {
+    +Request handle(Request req)
+    -boolean checkAuthentication(Request req)
+  }
+  
+  ' RootLayout usa ClerkAuth para autenticar
+  RootLayout --> ClerkAuth : "usa"
+  AuthMiddleware --> ClerkAuth : "utiliza"
+}
+
+' ------------------------------------------
+' Package: UI Components
+package "UI Components" {
+  class RootLayout {
+    +JSX.Element render()
+    -async checkOrCreateUserProfile(): void
+  }
+  class Header {
+    +JSX.Element render()
+  }
+  class Footer {
+    +JSX.Element render()
+  }
+  class Button {
+    +JSX.Element render()
+  }
+  class Form {
+    +JSX.Element render()
+  }
+  
+  RootLayout --> Header : "compone"
+  RootLayout --> Footer : "compone"
+  RootLayout --> Button : "compone"
+  RootLayout --> Form : "compone"
+}
+
+' ------------------------------------------
+' Package: Hooks & Utilities
+package "Hooks & Utilities" {
+  class useCopyToClipboard <<hook>> {
+    +boolean isCopied
+    +void copyToClipboard(value: string)
+  }
+  class useIsMobile <<hook>> {
+    +boolean isMobile
+  }
+  class useToast <<hook>> {
+    +Array<ToasterToast> toasts
+    +toast(props: Toast): { id: string, dismiss(): void, update(props: Toast): void }
+    +void dismiss(toastId?: string)
+  }
+  class cn {
+    +static string merge(ClassValue... inputs)
+  }
+}
+
+' ------------------------------------------
+' Relaciones entre paquetes
+
+' RootLayout (UI) usa acciones y autenticación
+RootLayout --> ProfilesActions : "gestiona perfil de usuario"
+RootLayout --> "UI Components" : "compone UI"
+
+' AuthMiddleware se integra con el enrutado y utiliza ClerkAuth
+AuthMiddleware --> ClerkAuth : "verifica autenticación"
+
+' NextJSRouter (API) maneja rutas y endpoints, entre ellos StripeWebhookHandler
+NextJSRouter --> StripeWebhookHandler : "contiene endpoint"
+
+' EnvConfig es utilizado por DB y StripeService
+DB ..> EnvConfig : "usa variables de entorno"
+StripeService ..> EnvConfig : "usa variables de entorno"
+
+' Hooks & Utilities se utilizan en UI Components
+useCopyToClipboard ..> "UI Components" : "se usa en componentes"
+useIsMobile ..> "UI Components" : "se usa en layouts y sidebar"
+useToast ..> "UI Components" : "notifica al usuario"
+cn ..> "UI Components" : "utilidad de estilos"
+
+@enduml
