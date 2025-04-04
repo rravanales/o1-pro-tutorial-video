@@ -83,7 +83,7 @@ export async function fvgAnalysisAction(
           fvgType: "bullish",
           startTime: candle1.time,
           endTime: candle3.time,
-          gapSize,
+          gapSize: gapSize,
           volume: totalVolume
         })
 
@@ -100,7 +100,7 @@ export async function fvgAnalysisAction(
           fvgType: "bearish",
           startTime: candle1.time,
           endTime: candle3.time,
-          gapSize,
+          gapSize: gapSize,
           volume: totalVolume
         })
       }
