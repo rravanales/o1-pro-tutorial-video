@@ -24,6 +24,7 @@
 import { Suspense } from "react"
 import { getFvgResultsAction } from "@/actions/market-data/get-fvg-results"
 import FvgChart from "@/components/fvg-chart"
+import DashboardSkeleton from "@/components/dashboard-skeleton"
 
 export default async function DashboardPage() {
   // Fetch raw FVG analysis data from the database.
@@ -57,7 +58,7 @@ export default async function DashboardPage() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="mb-4 text-2xl font-bold">FVG Analysis Dashboard</h1>
-      <Suspense fallback={<div>Loading chart...</div>}>
+      <Suspense fallback={<DashboardSkeleton />}>
         <FvgChart initialData={data} />
       </Suspense>
     </div>
