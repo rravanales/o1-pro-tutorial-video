@@ -9,6 +9,7 @@
  * - Calcula la firma HMAC-SHA256 de la cadena de parámetros usando BINGX_API_SECRET.
  * - Realiza una petición GET al endpoint '/openApi/swap/v3/quote/klines'.
  * - Valida la respuesta para asegurarse de que los datos se ajusten a la estructura esperada.
+ * - Transforma los valores numéricos recibidos como strings a números para cumplir con la interfaz.
  *
  * @dependencies
  * - Node.js crypto module para generar la firma.
@@ -24,7 +25,9 @@
 import { ActionState } from "@/types";
 import { createHmac } from "crypto";
 
-// Define la interfaz para los datos de candlestick según la documentación de BingX.
+/**
+ * Define la interfaz para los datos de candlestick según la documentación de BingX.
+ */
 export interface Candlestick {
   open: number;
   close: number;
@@ -119,18 +122,34 @@ export async function fetchMarketDataAction(): Promise<ActionState<Candlestick[]
     }
 
     // Parsear la respuesta en JSON
-    const data = await response.json();
+    const jsonResponse = await response.json();
 
-    // Validar que los datos recibidos tengan la estructura correcta de candlestick
-    if (!validateCandlestickData(data)) {
+    // Si la respuesta tiene una propiedad "data" que es un arreglo, utilízala
+    let rawData: any = jsonResponse;
+    if (jsonResponse && typeof jsonResponse === "object" && Array.isArray(jsonResponse.data)) {
+      rawData = jsonResponse.data;
+    }
+
+    // Transformar los datos: convertir propiedades numéricas en strings a números
+    const transformedCandlesticks = rawData.map((item: any) => ({
+      open: parseFloat(item.open),
+      close: parseFloat(item.close),
+      high: parseFloat(item.high),
+      low: parseFloat(item.low),
+      volume: parseFloat(item.volume),
+      time: item.time
+    })).reverse();
+
+    // Validar que los datos transformados tengan la estructura correcta de candlestick
+    if (!validateCandlestickData(transformedCandlesticks)) {
       throw new Error("El formato de datos de candlestick recibido es inválido.");
     }
 
-    // Retornar el estado de éxito con los datos validados
+    // Retornar el estado de éxito con los datos validados y transformados
     return {
       isSuccess: true,
       message: "Datos de mercado obtenidos y validados exitosamente.",
-      data: data
+      data: transformedCandlesticks
     };
 
   } catch (error: any) {
