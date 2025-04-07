@@ -15,6 +15,13 @@
       "when": 1743777636797,
       "tag": "0001_shiny_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743952080422,
+      "tag": "0002_grey_joystick",
+      "breakpoints": true
     }
   ]
 }
