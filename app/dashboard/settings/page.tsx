@@ -57,7 +57,7 @@ const defaultSettings: UserSettings = {
  * @param formData - The submitted form data.
  * @returns Nothing. On success, it redirects to "/dashboard/settings".
  */
-export async function updateSettings(formData: FormData) {
+async function updateSettings(formData: FormData) {
   "use server"
   const { userId } = await auth()
   if (!userId) {
