@@ -16,11 +16,12 @@
  *
  * @dependencies
  * - Imports the `Candlestick` type from the market data fetch action.
- * - Uses the ActionState type from "@/types/server-action-types.ts" for returning the result.
+ * - Uses the ActionState type from "@/types/server-action-types" for returning the result.
  *
  * @notes
  * - It is assumed that the candlestick data is sorted in ascending order by time.
  * - The function iterates over the data in sliding windows of three consecutive candles.
+ * - When a FVG is detected in a window, overlapping windows are skipped to avoid duplicate detections.
  */
 
 "use server"
@@ -45,6 +46,7 @@ export interface FvgAnalysisResult {
 /**
  * fvgAnalysisAction processes an array of candlestick data to identify FVG patterns.
  * It checks every group of three consecutive candles for bullish or bearish FVGs.
+ * If a pattern is detected in a given window, it skips overlapping windows.
  *
  * @param candlesticks - An array of candlestick data (sorted by time in ascending order).
  * @returns A Promise containing an ActionState with an array of FvgAnalysisResult.
@@ -64,15 +66,16 @@ export async function fvgAnalysisAction(
       }
     }
 
-    // Iterate over the candlesticks in groups of three.
-    // We use a sliding window where i, i+1, i+2 form the group.
-    for (let i = 0; i <= candlesticks.length - 3; i++) {
+    // Iterate over the candlesticks using a sliding window that skips overlapping groups.
+    for (let i = 0; i <= candlesticks.length - 3;) {
       const candle1 = candlesticks[i]
       const candle2 = candlesticks[i + 1]
       const candle3 = candlesticks[i + 2]
 
       // Calculate the total volume for the group.
       const totalVolume = candle1.volume + candle2.volume + candle3.volume
+
+      let foundFvg = false
 
       // Check for Bullish FVG:
       // The low of candle3 must be above the high of candle1.
@@ -87,13 +90,11 @@ export async function fvgAnalysisAction(
           volume: totalVolume
         })
 
-        // Optionally, you might skip overlapping groups if needed.
-        // For now, we continue the sliding window.
+        foundFvg = true
       }
-
       // Check for Bearish FVG:
       // The high of candle3 must be below the low of candle1.
-      if (candle3.high < candle1.low) {
+      else if (candle3.high < candle1.low) {
         const gapSize = candle1.low - candle3.high
 
         results.push({
@@ -103,6 +104,15 @@ export async function fvgAnalysisAction(
           gapSize: gapSize,
           volume: totalVolume
         })
+
+        foundFvg = true
+      }
+
+      // If a FVG was found, skip the next 2 overlapping windows.
+      if (foundFvg) {
+        i += 3
+      } else {
+        i++
       }
     }
 
